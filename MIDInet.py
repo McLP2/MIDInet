@@ -41,8 +41,10 @@ model.add(InputLayer(input_shape=(128, 1)))
 model.add(LSTM(256, activation='relu', dropout=0.2, recurrent_dropout=0.2))
 model.add(Dense(128, activation='sigmoid'))
 
-model.compile(optimizer=keras.optimizers.Adam(lr=0.001, beta_1=0 - 9, beta_2=0.999, epsilon=None),
-              loss=keras.losses.binary_crossentropy,
+model.compile(optimizer=keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None),
+              loss=keras.losses.mean_squared_error,
               metrics=['accuracy'])
 
-model.fit(midi, midi_y, batch_size=16, epochs=10, shuffle=True)
+model.fit(midi, midi_y, batch_size=256, epochs=100, shuffle=True)
+
+model.save('MIDInet.h5')
