@@ -31,21 +31,18 @@ for file_name in listdir(read_from)[:1]:
 for file_name in listdir(read_from)[:1]:
     arr = np.load(read_from + file_name)
     arr = arr[arr.keys()[0]]
-    midi_y = (np.reshape(arr[1:], (-1, 128, 1)))
+    midi_y = (np.reshape(arr[1:], (-1, 128)))
 
 print(midi.shape, midi_y.shape)
 
 model = keras.models.Sequential()
 
 model.add(InputLayer(input_shape=(128, 1)))
-model.add(LSTM(1024, activation='relu', dropout=0.2, recurrent_dropout=0.2))
-# model.add(TimeDistributed(Flatten()))
-model.add(Dense(256, activation='relu'))
-# model.add(TimeDistributed(Dropout(rate=0.2)))
-model.add(Dense(128, activation='softmax'))
+model.add(LSTM(256, activation='relu', dropout=0.2, recurrent_dropout=0.2))
+model.add(Dense(128, activation='sigmoid'))
 
 model.compile(optimizer=keras.optimizers.Adam(lr=0.001, beta_1=0 - 9, beta_2=0.999, epsilon=None),
               loss=keras.losses.binary_crossentropy,
               metrics=['accuracy'])
 
-model.fit(midi, midi_y, batch_size=32, epochs=10, shuffle=True)
+model.fit(midi, midi_y, batch_size=16, epochs=10, shuffle=True)
