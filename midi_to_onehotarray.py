@@ -23,18 +23,23 @@ def convert(filename):
     start = duration.time()
     timestamp = 0
     notes = []
+    # tickspersecond = 60 / (120 * midi_file.ticks_per_beat)  # tps for 120bpm
+
     for msg in midi_file:
-        timestamp += msg.time
+        # if msg.type == 'set_tempo':
+        #     tickspersecond = (midi_file.ticks_per_beat / msg.value) * 1000000  # tps for known tempo
+        timestamp += msg.time  # * tickspersecond
         if msg.type in relevant_types:
             notes.append([msg.type, msg.note, timestamp])
-    time = 0
+
     i = 0
     samples = []
     current_situation = np.zeros(128, dtype='int')
     for sample in np.arange(0, math.ceil(timestamp), 0.1):
-        if i < len(notes) and notes[i][2] < sample:
-            while time < sample:
+        if i < len(notes) and notes[i][2] <= sample:
+            while notes[i][2] <= sample:
                 action, pitch, time = notes[i]
+                # print(notes[i])
                 if action == 'note_on':
                     current_situation[pitch] = 1
                 elif action == 'note_off':
@@ -68,6 +73,6 @@ for file_name in listdir(read_from):
             print("\n\n\n", file_name, ":")
             try:
                 convert(file_name)
-            except Exception:
-                print("Error!")
+            except Exception as ex:
+                print("Error:", ex)
                 pass
