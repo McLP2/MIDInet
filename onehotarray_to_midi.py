@@ -35,7 +35,4 @@ def convert(onehotarray_sequence, filename):
 
 
 arr = np.load('midi_arrays/alle_meine_entchen.mid.npz')
-arr = arr[arr.keys()[0]]
-np.set_printoptions(threshold=np.nan)
-print(arr)
 convert(arr, 'midis/alle_meine_entchen_reconverted.mid')
