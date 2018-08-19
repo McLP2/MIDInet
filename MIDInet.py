@@ -38,10 +38,12 @@ print(midi.shape, midi_y.shape)
 model = keras.models.Sequential()
 
 model.add(InputLayer(input_shape=(128, 1)))
-model.add(LSTM(256, activation='relu', dropout=0.2, recurrent_dropout=0.2))
+model.add(LSTM(96, activation='relu', dropout=0.2, recurrent_dropout=0.2, return_sequences=True))
+model.add(LSTM(160, activation='relu', dropout=0.2, recurrent_dropout=0.2))
+model.add(Dense(256, activation='relu'))
 model.add(Dense(128, activation='sigmoid'))
 
-model.compile(optimizer=keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None),
+model.compile(optimizer=keras.optimizers.Adam(lr=0.003, beta_1=0.9, beta_2=0.999, epsilon=None),
               loss=keras.losses.mean_squared_error,
               metrics=['accuracy'])
 

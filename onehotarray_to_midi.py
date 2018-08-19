@@ -1,5 +1,3 @@
-# TODO: Write converter
-
 import mido
 import numpy as np
 
@@ -13,7 +11,6 @@ def convert(onehotarray_sequence, filename):
     timer = 0
 
     for onehotarray in onehotarray_sequence:
-
         # get changed indices via xor
         indices = np.arange(0, 128, 1)[np.logical_xor(last_array, onehotarray)]
 
@@ -32,7 +29,3 @@ def convert(onehotarray_sequence, filename):
 
         last_array = onehotarray
     midi_file.save(filename)
-
-
-arr = np.load('midi_arrays/alle_meine_entchen.mid.npz')
-convert(arr, 'midis/alle_meine_entchen_reconverted.mid')
