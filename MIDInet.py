@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.layers import LSTM, Dense, Dropout, TimeDistributed, Embedding, InputLayer, Flatten
+from tensorflow.keras.layers import LSTM, Dense, Dropout, InputLayer
 import numpy as np
 from os import listdir
 
@@ -38,15 +38,17 @@ print(midi.shape, midi_y.shape)
 model = keras.models.Sequential()
 
 model.add(InputLayer(input_shape=(128, 1)))
-model.add(LSTM(96, activation='relu', dropout=0.2, recurrent_dropout=0.2, return_sequences=True))
 model.add(LSTM(160, activation='relu', dropout=0.2, recurrent_dropout=0.2))
-model.add(Dense(256, activation='relu'))
 model.add(Dense(128, activation='sigmoid'))
 
-model.compile(optimizer=keras.optimizers.Adam(lr=0.003, beta_1=0.9, beta_2=0.999, epsilon=None),
+model.compile(optimizer=keras.optimizers.Adam(lr=0.005),
               loss=keras.losses.mean_squared_error,
-              metrics=['accuracy'])
+              metrics=[keras.metrics.mean_absolute_error])
 
-model.fit(midi, midi_y, batch_size=256, epochs=100, shuffle=True)
+model.fit(midi, midi_y, batch_size=256, epochs=6, shuffle=False)
+
+np.set_printoptions(threshold=np.nan)
+print(midi[0].reshape(1, -1))
+print(model.predict(midi[0].reshape(1, -1, 1)))
 
 model.save('MIDInet.h5')
