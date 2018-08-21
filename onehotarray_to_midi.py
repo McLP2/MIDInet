@@ -28,4 +28,8 @@ def convert(onehotarray_sequence, filename):
         timer = timer + 96
 
         last_array = onehotarray
+
+    for index in np.arange(0, 128, 1)[last_array == 1]:
+        track.append(mido.Message('note_off', note=index, velocity=127, time=timer))
+    
     midi_file.save(filename)
