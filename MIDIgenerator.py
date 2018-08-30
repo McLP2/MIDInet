@@ -14,7 +14,7 @@ filename = 'prediction'
 look_back = 20
 model = models.Sequential()
 
-model.add(InputLayer(input_shape=(look_back, 128)))
+model.add(InputLayer(input_shape=(1, 128)))
 model.add(LSTM(units=512, activation='tanh', dropout=0.4, recurrent_dropout=0.2, return_sequences=True))
 model.add(LSTM(units=512, activation='tanh', dropout=0.4, recurrent_dropout=0.2, return_sequences=True))
 model.add(LSTM(units=512, activation='tanh', dropout=0.4, recurrent_dropout=0.2, return_sequences=False))
@@ -89,15 +89,16 @@ sequence = np.array([
      0, 0, 0, 0, 0, 0, 0, 0, ],
 ])
 
-# pad sequence with zeros at the beginning
-while sequence.shape[0] < look_back:
-    sequence = np.concatenate((np.zeros((1, 128)), sequence))
+# burn-in (telling the network what to begin with)
+for i in range(len(sequence) - 1):
+    # print(sequence[i].reshape(1, 1, 128))
+    output = model.predict(sequence[i].reshape(1, 1, 128), verbose=0)[0]
 
 # generate & export data
 print("Generating (this may take a while)...")
-output = sequence
+
 for i in range(output_length):
-    output = model.predict(sequence[:look_back].reshape((1, look_back, 128)), verbose=0)[0]
+    output = model.predict(sequence[len(sequence) - 1].reshape(1, 1, 128), verbose=0)[0]
     mask = output > sensitivity
     output = np.zeros(128)
     output[mask] = 1

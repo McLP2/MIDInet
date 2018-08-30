@@ -1,6 +1,6 @@
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.layers import LSTM, Dense, Dropout, InputLayer
+from tensorflow.keras.layers import LSTM, Dense, Dropout, InputLayer, TimeDistributed
 import numpy as np
 from os import listdir
 
@@ -13,26 +13,17 @@ step_size = 1
 
 def make_dataset_from_midi(midi_array: np.array) -> (np.array, np.array):
     result_x = np.ndarray((0, look_back, 128))
-    result_y = np.ndarray((0, 128))
-    for i in range(-look_back + 1, midi_array.shape[0], step_size):
-        x = midi_array[i:look_back + i]
-        if i < 0:
-            while x.shape[0] < look_back:
-                x = np.concatenate((np.zeros((1, 128)), x))
-            y = np.zeros((1, 128))
-        elif i >= midi_array.shape[0] - look_back:
-            while x.shape[0] < look_back:
-                x = np.concatenate((x, np.zeros((1, 128))))
-            y = np.zeros((128,))
-        else:
-            y = midi_array[look_back + i]
+    result_y = np.ndarray((0, look_back, 128))
+    for i in range(0, midi_array.shape[0] - look_back - 1, step_size):
+        x = midi_array[i:i + look_back]
+        y = midi_array[i + 1:i + look_back + 1]
         result_x = np.concatenate((result_x, x.reshape(1, look_back, 128)))
-        result_y = np.concatenate((result_y, y.reshape(1, 128)))
+        result_y = np.concatenate((result_y, y.reshape(1, look_back, 128)))
     return result_x, result_y
 
 
 midis = np.ndarray((0, look_back, 128))
-midis_y = np.ndarray((0, 128))
+midis_y = np.ndarray((0, look_back, 128))
 # go through folder and add all arrays
 for file_name in listdir(read_from):
     arr = np.load(read_from + file_name)
@@ -46,10 +37,10 @@ model = keras.models.Sequential()
 model.add(InputLayer(input_shape=(look_back, 128)))
 model.add(LSTM(units=512, activation='tanh', dropout=0, recurrent_dropout=0, return_sequences=True))
 model.add(LSTM(units=512, activation='tanh', dropout=0, recurrent_dropout=0, return_sequences=True))
-model.add(LSTM(units=512, activation='tanh', dropout=0, recurrent_dropout=0, return_sequences=False))
-model.add(Dense(units=256, activation='tanh'))
-model.add(Dropout(rate=0))
-model.add(Dense(units=128, activation='sigmoid'))
+model.add(LSTM(units=512, activation='tanh', dropout=0, recurrent_dropout=0, return_sequences=True))
+model.add(TimeDistributed(Dense(units=256, activation='tanh')))
+model.add(TimeDistributed(Dropout(rate=0)))
+model.add(TimeDistributed(Dense(units=128, activation='sigmoid')))
 
 model.compile(optimizer=keras.optimizers.Adam(lr=0.002),
               loss=keras.losses.mean_squared_error,
