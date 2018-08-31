@@ -1,3 +1,6 @@
+
+print("Initializing...")
+
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.layers import LSTM, Dense, Dropout, InputLayer, TimeDistributed
@@ -7,8 +10,8 @@ from os import listdir
 # import midis
 
 read_from = 'midi_arrays/'
-look_back = 20
-step_size = 1
+look_back = 100
+step_size = look_back // 3
 
 
 def make_dataset_from_midi(midi_array: np.array) -> (np.array, np.array):
@@ -24,13 +27,22 @@ def make_dataset_from_midi(midi_array: np.array) -> (np.array, np.array):
 
 midis = np.ndarray((0, look_back, 128))
 midis_y = np.ndarray((0, look_back, 128))
+
+print("\nLoading training data...")
+
 # go through folder and add all arrays
-for file_name in listdir(read_from):
+files = listdir(read_from)
+i = 0
+for file_name in files:
+    i = i + 1
+    print("  Loading: " + file_name + " ("+str(i)+"/"+str(len(files))+")")
     arr = np.load(read_from + file_name)
     arr = arr[arr.keys()[0]]
     arr_x, arr_y = make_dataset_from_midi(arr)
     midis = np.concatenate((midis, arr_x))
     midis_y = np.concatenate((midis_y, arr_y))
+
+print("\nBuilding model...")
 
 model = keras.models.Sequential()
 
@@ -46,10 +58,14 @@ model.compile(optimizer=keras.optimizers.Adam(lr=0.002),
               loss=keras.losses.mean_squared_error,
               metrics=[keras.metrics.mean_absolute_error])
 
-model.fit(midis, midis_y, batch_size=512, epochs=50, shuffle=True, verbose=1)
+print("\nStarting training process...")
 
-# np.set_printoptions(threshold=np.nan)
-print(midis[look_back][:look_back])
-print(model.predict(midis[look_back][:look_back].reshape(1, look_back, 128)))
+model.fit(midis, midis_y, batch_size=128, epochs=50, shuffle=True, verbose=1)
+
+print("\nSaving model...")
 
 model.save('MIDInet.h5')
+
+print("\nRunning prediction:\n\n")
+
+import MIDIgenerator

@@ -1,3 +1,6 @@
+
+print("Loading modules...")
+
 from tensorflow.keras import models
 from tensorflow.keras.layers import LSTM, Dense, Dropout, InputLayer
 import onehotarray_to_midi
@@ -7,11 +10,12 @@ sensitivity = 0.1  # minimum value of the output to be recognized as a pressed k
 output_length = 100  # in deciseconds
 filename = 'prediction'
 
+print("Loading model...")
+
 # not working
 # model = models.load_model('MIDInet.h5')
 
 # may work
-look_back = 20
 model = models.Sequential()
 
 model.add(InputLayer(input_shape=(1, 128)))
