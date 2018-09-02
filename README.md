@@ -68,5 +68,5 @@ Further research is needed.
 
 
 ## Ideas
-Use one-hot-encoding instead of binary encoding. This would make the threshold-problem
+Use one-hot-encoding for each note by introducing a new dimension instead of onedimensional binary encoding for the whole spectrum. This would make the threshold-problem
 obsolete and therefore reduce the possibility of error.
