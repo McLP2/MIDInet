@@ -10,49 +10,60 @@ from os.path import isfile
 import MIDIgenerator
 import generator_callback
 
-# import midis
+# settings
 
-read_from = 'midi_arrays/'
-look_back = 50
-step_size = look_back // 3 * 2
-batch_size = 100
-epochs = 256
-approximate_file_count = 100
+read_from = 'midi_arrays/'  # folder in which the converted midis are (output folder of midi_to_binary_array.py)
+look_back = 50  # how many time-steps are trained at once / loaded in one block
+step_size = look_back // 3 * 2  # the distance between the beginning of loaded blocks
+batch_size = 100  # how many blocks are trained at once. Higher is better, but depends on available memory.
+epochs = 256  # how many epochs are to be trained. Higher values train longer, but may produce better results.
+approximate_file_count = 100  # about how many midis are used. Lower values use less resources but cause worse results.
 
 
 def make_dataset_from_midi(midi_array: np.array) -> (np.array, np.array):
+    # create arrays to save samples temporarily to (0 samples, block size, 128 possible midi notes)
     result_x = np.ndarray((0, look_back, 128))
     result_y = np.ndarray((0, look_back, 128))
+    # loop through whole midi
     for i in range(0, midi_array.shape[0] - look_back - 1, step_size):
-        x = midi_array[i:i + look_back]
-        y = midi_array[i + 1:i + look_back + 1]
+        x = midi_array[i:i + look_back]  # add block to x values
+        y = midi_array[i + 1:i + look_back + 1]  # add block (displaced by one into the future) to y values
+        # add blocks to sample arrays
         result_x = np.concatenate((result_x, x.reshape(1, look_back, 128)))
         result_y = np.concatenate((result_y, y.reshape(1, look_back, 128)))
     return result_x, result_y
 
 
+# create arrays to save samples to (0 samples, block size, 128 possible midi notes)
 midis = np.ndarray((0, look_back, 128))
 midis_y = np.ndarray((0, look_back, 128))
 
 print("\nLoading training data...")
 
+# check if there is prepared data available
 if not isfile("prepared_training_data_" + str(approximate_file_count) + ".npz"):
-    # go through folder and add all arrays
+    # read folder contents
     files = listdir(read_from)
+    # select random files (about as many as defined in settings)
     mask = np.random.random((len(files),)) < approximate_file_count / len(files)
     files = [files[i] for i in range(len(files)) if mask[i]]
-    i = 0
+    # loop through all selected files and load them to array
+    i = 0  # counter for log
     for file_name in files:
         i = i + 1
         print("  Loading: " + file_name + " (" + str(i) + "/" + str(len(files)) + ")")
+        # load array
         arr = np.load(read_from + file_name)
         arr = arr[arr.keys()[0]]
+        # make sample-blocks
         arr_x, arr_y = make_dataset_from_midi(arr)
+        # add samples to array
         midis = np.concatenate((midis, arr_x))
         midis_y = np.concatenate((midis_y, arr_y))
+    # save prepared samples for next training
     np.savez_compressed("prepared_training_data_" + str(approximate_file_count) + ".npz", x=midis, y=midis_y)
 else:
-    # load prepared file
+    # load prepared file (faster then generating samples)
     loaded = np.load("prepared_training_data_" + str(approximate_file_count) + ".npz")
     midis = loaded['x']
     midis_y = loaded['y']
@@ -71,6 +82,7 @@ model.compile(optimizer=keras.optimizers.Adam(lr=0.001),
 
 print("\nStarting training process...")
 
+# save weights and generate midi after each epoch
 checkpoint = keras.callbacks.ModelCheckpoint("checkpoints/MIDInet_epoch{epoch:03d}.hdf5")
 generator = generator_callback.GeneratorCallback("checkpoints/prediction_at_epoch_{epoch:03d}", 100)
 

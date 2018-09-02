@@ -3,15 +3,17 @@ import numpy as np
 
 
 def convert(onehotarray_sequence, filename):
+    # create midi
     midi_file = mido.MidiFile()
     track = mido.MidiTrack()
     midi_file.tracks.append(track)
 
+    # before the midi there was nothing (we assume that there were no notes playing before we created the midi)
     last_array = np.zeros(128)
     timer = 0
 
     for onehotarray in onehotarray_sequence:
-        # get changed indices via xor
+        # get changed indices (pitches) via xor
         indices = np.arange(0, 128, 1)[np.logical_xor(last_array, onehotarray)]
 
         for index in indices:
@@ -29,7 +31,9 @@ def convert(onehotarray_sequence, filename):
 
         last_array = onehotarray
 
+    # switch off all notes that are still active in the end
     for index in np.arange(0, 128, 1)[last_array == 1]:
         track.append(mido.Message('note_off', note=index, velocity=127, time=timer))
+        timer = 0  # switch them off at once
     
     midi_file.save(filename)
