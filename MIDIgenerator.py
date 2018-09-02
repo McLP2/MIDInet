@@ -1,35 +1,14 @@
-
-print("Loading modules...")
-
 from tensorflow.keras import models
-from tensorflow.keras.layers import LSTM, Dense, Dropout, InputLayer
+from tensorflow.keras.layers import LSTM, Dense, Dropout, InputLayer, TimeDistributed
 import onehotarray_to_midi
 import numpy as np
 
-sensitivity = 0.1  # minimum value of the output to be recognized as a pressed key
-output_length = 100  # in deciseconds
-filename = 'prediction'
-
-print("Loading model...")
-
-# not working
-# model = models.load_model('MIDInet.h5')
-
-# may work
-model = models.Sequential()
-
-model.add(InputLayer(input_shape=(1, 128)))
-model.add(LSTM(units=512, activation='tanh', dropout=0.4, recurrent_dropout=0.2, return_sequences=True))
-model.add(LSTM(units=512, activation='tanh', dropout=0.4, recurrent_dropout=0.2, return_sequences=True))
-model.add(LSTM(units=512, activation='tanh', dropout=0.4, recurrent_dropout=0.2, return_sequences=False))
-model.add(Dense(units=256, activation='tanh'))
-model.add(Dropout(rate=0.4))
-model.add(Dense(units=128, activation='sigmoid'))
-
-model.load_weights('MIDInet.h5')
+default_sensitivity = 0.1  # minimum value of the output to be recognized as a pressed key
+default_output_length = 600  # in deciseconds
+default_file_name = 'prediction'
 
 # input sequence
-sequence = np.array([
+default_input_sequence = np.array([
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
      0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -93,20 +72,55 @@ sequence = np.array([
      0, 0, 0, 0, 0, 0, 0, 0, ],
 ])
 
-# burn-in (telling the network what to begin with)
-for i in range(len(sequence) - 1):
-    # print(sequence[i].reshape(1, 1, 128))
-    output = model.predict(sequence[i].reshape(1, 1, 128), verbose=0)[0]
 
-# generate & export data
-print("Generating (this may take a while)...")
+def load_model():
+    print("Loading model...")
 
-for i in range(output_length):
-    output = model.predict(sequence[len(sequence) - 1].reshape(1, 1, 128), verbose=0)[0]
-    mask = output > sensitivity
-    output = np.zeros(128)
-    output[mask] = 1
-    sequence = np.concatenate((sequence, output.reshape((1, 128))))
+    # not working
+    # model = models.load_model('MIDInet.hdf5')
 
-print("Saving as \"" + filename + ".mid\"...")
-onehotarray_to_midi.convert(sequence, filename + '.mid')
+    # may work
+    model = models.Sequential()
+
+    model.add(InputLayer(input_shape=(None, 128)))
+    model.add(LSTM(units=512, activation='tanh', dropout=0.2, recurrent_dropout=0.2, return_sequences=True))
+    model.add(LSTM(units=128, activation='sigmoid', dropout=0, recurrent_dropout=0.2, return_sequences=True))
+
+    model.load_weights('MIDInet.hdf5')
+
+    return model
+
+
+def generate(model, filename=default_file_name, verbose=1,
+             output_length=default_output_length,
+             sensitivity=default_sensitivity,
+             sequence=default_input_sequence
+             ):
+    # generate & export data
+    if verbose >= 1:
+        print("Generating (this may take a while)...")
+
+    model.reset_states()
+
+    # burn-in (telling the network what to begin with)
+    for i in range(len(sequence) - 1):
+        model.predict(sequence[i].reshape(1, 1, 128), verbose=0)
+
+    for i in range(output_length):
+        output = model.predict(sequence[-1].reshape(1, 1, 128), verbose=verbose)[0][0]
+        mask = output > sensitivity
+        output = np.zeros(128)
+        output[mask] = 1
+        sequence = np.concatenate((sequence, output.reshape((1, 128))))
+
+    if verbose >= 1:
+        print("Saving as \"" + filename + ".mid\"...")
+    onehotarray_to_midi.convert(sequence, filename + '.mid')
+
+
+def main():
+    generate(load_model())
+
+
+if __name__ == "__main__":
+    main()
